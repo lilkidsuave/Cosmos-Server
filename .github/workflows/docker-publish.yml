@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   release:
     types: [published]
-    
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -19,6 +19,31 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bash curl wget
+
+      - name: Install Go
+        run: |
+          wget https://golang.org/dl/go1.21.6.linux-amd64.tar.gz
+          sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.21.6.linux-amd64.tar.gz
+          echo 'export PATH=$PATH:/usr/local/go/bin' >> $GITHUB_ENV
+
+      - name: Install NVM and Node.js
+        run: |
+          export NVM_DIR="$HOME/.nvm"
+          mkdir -p $NVM_DIR
+          curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
+          echo 'export NVM_DIR="$HOME/.nvm"' >> $GITHUB_ENV
+          echo '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"' >> $GITHUB_ENV
+          source $NVM_DIR/nvm.sh
+          nvm install v16
+          nvm alias default v16
+
+      - name: Verify Node.js installation
+        run: node -v
+
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -26,13 +51,34 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Install npm dependencies
+        run: npm install
+
+      - name: Download GeoLite2-Country database
+        run: |
+          curl -s -L "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country&license_key=${{ secrets.MAX_TOKEN }}&suffix=tar.gz" -o GeoLite2-Country.tar.gz
+          tar -xzf GeoLite2-Country.tar.gz --strip-components 1 --wildcards "*.mmdb"
+
+      - name: Download and extract Nebula binaries
+        run: |
+          curl -LO https://github.com/slackhq/nebula/releases/download/v1.8.2/nebula-linux-arm64.tar.gz
+          tar -xzvf nebula-linux-arm64.tar.gz
+          mv nebula nebula-arm
+          mv nebula-cert nebula-arm-cert
+          curl -LO https://github.com/slackhq/nebula/releases/download/v1.8.2/nebula-linux-amd64.tar.gz
+          tar -xzvf nebula-linux-amd64.tar.gz
+
+      - name: Build UI
+        run: npm run client-build
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
           context: .
           push: true
           tags: |
-            ghcr.io/lilkidsuave/cosmos-server:latest
+            ghcr.io/lilkidsuave/qbdlgui-reborn:latest
+            ghcr.io/lilkidsuave/qbdlgui-reborn:V1.1
           platforms: linux/amd64,linux/arm64
 
       - name: Log out from GitHub Container Registry
