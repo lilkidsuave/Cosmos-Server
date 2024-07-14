@@ -1,57 +1,118 @@
-name: Docker Build and Push to GHCR
+name: Build and Publish
 
 on:
   workflow_dispatch:
-  release:
-    types: [published]
+  push:
+    branches:
+      - master
+      - unstable
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-
+    name: Build and Publish on amd64
+    runs-on: ubuntu-20.04
+    
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v2
 
-      - name: Install dependencies
+      - name: Setup Docker Buildx
+        run: docker buildx create --use
+
+      - name: Install Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y \
-            bash coreutils curl wget \
-            ca-certificates openssl fdisk mergerfs snapraid avahi-daemon avahi-utils \
-            nodejs golang
+          sudo apt-get install -y bash curl
 
-          # Install NVM and Node.js
-          export NVM_DIR="$HOME/.nvm"
-          curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
-          . $NVM_DIR/nvm.sh
-          nvm install v16
-          nvm alias default v16
-          
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push Docker image
+      - name: Download and Install Go
         run: |
-          npm install
-          npm run client-build
-          curl -s -L "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country&license_key=${{ secrets.MAX_TOKEN }}&suffix=tar.gz" -o GeoLite2-Country.tar.gz
+          wget https://golang.org/dl/go1.21.6.linux-amd64.tar.gz
+          sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.21.6.linux-amd64.tar.gz
+
+      - name: Set Go Environment
+        run: echo 'export PATH=$PATH:/usr/local/go/bin' >> $GITHUB_ENV
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+
+      - name: Install npm dependencies
+        run: npm install
+
+      - name: Download GeoLite2-Country database
+        run: |
+          curl -s -L "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country&license_key=$MAX_TOKEN&suffix=tar.gz" -o GeoLite2-Country.tar.gz
           tar -xzf GeoLite2-Country.tar.gz --strip-components 1 --wildcards "*.mmdb"
-          curl -LO https://github.com/slackhq/nebula/releases/download/v1.8.2/nebula-linux-arm64.tar.gz
+
+      - name: Download and Extract Nebula Binary (AMD64)
+        run: |
+          curl -LO https://github.com/slackhq/nebula/releases/download/v1.7.2/nebula-linux-amd64.tar.gz
+          tar -xzvf nebula-linux-amd64.tar.gz
+          mv nebula nebula-amd
+          mv nebula-cert nebula-amd-cert
+
+      - name: Build UI
+        run: npm run client-build
+
+      - name: Build Docker Image
+        run: docker build -t docker.pkg.github.com/${{ github.repository_owner }}/${{ github.repository }}/my-image:latest .
+        
+      - name: Docker Login to GitHub Packages
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u ${{ github.repository_owner }} --password-stdin
+
+      - name: Push Docker Image to GitHub Packages
+        run: docker push docker.pkg.github.com/${{ github.repository_owner }}/${{ github.repository }}/my-image:latest
+
+  build-arm:
+    name: Build and Publish on ARM
+    runs-on: ubuntu-20.04
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bash curl
+
+      - name: Download and Install Go (ARM64)
+        run: |
+          wget https://golang.org/dl/go1.21.6.linux-arm64.tar.gz
+          sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.21.6.linux-arm64.tar.gz
+
+      - name: Set Go Environment
+        run: echo 'export PATH=$PATH:/usr/local/go/bin' >> $GITHUB_ENV
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+
+      - name: Install npm dependencies
+        run: npm install
+
+      - name: Download GeoLite2-Country database
+        run: |
+          curl -s -L "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country&license_key=$MAX_TOKEN&suffix=tar.gz" -o GeoLite2-Country.tar.gz
+          tar -xzf GeoLite2-Country.tar.gz --strip-components 1 --wildcards "*.mmdb"
+
+      - name: Download and Extract Nebula Binary (ARM64)
+        run: |
+          curl -LO https://github.com/slackhq/nebula/releases/download/v1.7.2/nebula-linux-arm64.tar.gz
           tar -xzvf nebula-linux-arm64.tar.gz
           mv nebula nebula-arm
           mv nebula-cert nebula-arm-cert
-          curl -LO https://github.com/slackhq/nebula/releases/download/v1.8.2/nebula-linux-amd64.tar.gz
-          tar -xzvf nebula-linux-amd64.tar.gz
-          docker buildx create --use
-          docker buildx build --platform linux/amd64,linux/arm64 -t ghcr.io/lilkidsuave/cosmos-server:latest -t ghcr.io/lilkidsuave/cosmos-server:unstable .
 
-      - name: Push Docker image
-        run: docker push ghcr.io/lilkidsuave/cosmos-server
+      - name: Build UI
+        run: npm run client-build
 
-      - name: Log out from GitHub Container Registry
-        run: docker logout ghcr.io
+      - name: Build Docker Image (ARM64)
+        run: docker build -t docker.pkg.github.com/${{ github.repository_owner }}/${{ github.repository }}/my-image-arm64:latest .
+        
+      - name: Docker Login to GitHub Packages (ARM64)
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u ${{ github.repository_owner }} --password-stdin
+
+      - name: Push Docker Image to GitHub Packages (ARM64)
+        run: docker push docker.pkg.github.com/${{ github.repository_owner }}/${{ github.repository }}/my-image-arm64:latest
