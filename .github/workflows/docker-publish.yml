@@ -28,21 +28,23 @@ jobs:
         run: |
           wget https://golang.org/dl/go1.21.6.linux-amd64.tar.gz
           sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.21.6.linux-amd64.tar.gz
-          echo 'export PATH=$PATH:/usr/local/go/bin' >> $GITHUB_ENV
+          echo 'PATH=$PATH:/usr/local/go/bin' >> $GITHUB_ENV
 
       - name: Install NVM and Node.js
         run: |
           export NVM_DIR="$HOME/.nvm"
           mkdir -p $NVM_DIR
           curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
-          echo 'export NVM_DIR="$HOME/.nvm"' >> $GITHUB_ENV
-          echo '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"' >> $GITHUB_ENV
-          source $NVM_DIR/nvm.sh
+          echo 'NVM_DIR=$HOME/.nvm' >> $GITHUB_ENV
+          echo '. $NVM_DIR/nvm.sh' >> $GITHUB_ENV
+          . $NVM_DIR/nvm.sh
           nvm install v16
           nvm alias default v16
 
       - name: Verify Node.js installation
-        run: node -v
+        run: |
+          . $HOME/.nvm/nvm.sh
+          node -v
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
@@ -52,7 +54,9 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install npm dependencies
-        run: npm install
+        run: |
+          . $HOME/.nvm/nvm.sh
+          npm install
 
       - name: Download GeoLite2-Country database
         run: |
@@ -69,7 +73,9 @@ jobs:
           tar -xzvf nebula-linux-amd64.tar.gz
 
       - name: Build UI
-        run: npm run client-build
+        run: |
+          . $HOME/.nvm/nvm.sh
+          npm run client-build
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
