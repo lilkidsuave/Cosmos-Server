@@ -25,7 +25,7 @@ RUN apt-get update && \
     && rm -rf /var/lib/apt/lists/*
 
 # Download and install Go
-ENV PATH=$PATH:/usr/local/go/bin
+ENV PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/go/bin:/app/bin:${PATH}"
 RUN wget https://golang.org/dl/go1.21.8.linux-amd64.tar.gz && \
     tar -C /usr/local -xzf go1.21.8.linux-amd64.tar.gz && \
     rm go1.21.8.linux-amd64.tar.gz
