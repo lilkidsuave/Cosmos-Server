@@ -34,7 +34,7 @@ RUN wget -O- https://deb.nodesource.com/setup_18.x | bash - && \
     apt-get autoremove -y
 
 # Set default environment variables including PATH
-ENV PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/go/bin:/app/bin:${PATH}"
+ARG PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/go/bin:/app/bin:${PATH}"
 
 # Copy Go modules and download them
 COPY go.mod go.sum ./
