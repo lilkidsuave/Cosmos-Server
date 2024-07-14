@@ -2,7 +2,7 @@
 
 FROM debian:11
 
-EXPOSE 443 80
+EXPOSE 443 80 5353/udp
 
 VOLUME /config
 
@@ -21,15 +21,15 @@ RUN apt-get update && apt-get install -y ca-certificates openssl fdisk mergerfs 
     apt-get remove -y wget curl && \
     apt-get autoremove -y
 
-COPY go.mod ./
-COPY go.sum ./
+COPY go.mod ./ 
+COPY go.sum ./ 
 RUN go mod download
 
-COPY package.json ./
-COPY package-lock.json ./
+COPY package.json ./ 
+COPY package-lock.json ./ 
 RUN npm install
 
-COPY . .
+COPY . . 
 RUN npm run client-build && \
     chmod +x build.sh && \
     ./build.sh && \
@@ -40,4 +40,4 @@ RUN npm run client-build && \
 
 WORKDIR /app/build
 
-CMD ["./cosmos"]
+CMD ["/bin/bash", "-c", "service avahi-daemon start && ./cosmos"]
