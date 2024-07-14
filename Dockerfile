@@ -11,11 +11,12 @@ WORKDIR /app
 ENV PATH=$PATH:/usr/local/go/bin
 
 RUN apt-get update && apt-get install -y ca-certificates openssl fdisk mergerfs snapraid && \
-    apt-get install -y --no-install-recommends  wget curl nodejs npm && \
+    apt-get install -y --no-install-recommends  wget curl && \
     wget https://golang.org/dl/go1.21.8.linux-amd64.tar.gz && \
     tar -C /usr/local -xzf go1.21.8.linux-amd64.tar.gz && \
     rm go1.21.8.linux-amd64.tar.gz && \
     curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
+    apt-get install -y nodejs && \
     wget https://github.com/slackhq/nebula/releases/download/v1.8.2/nebula-linux-amd64.tar.gz && \
     tar -xzvf nebula-linux-amd64.tar.gz && \
     rm nebula-linux-amd64.tar.gz && \
@@ -23,10 +24,8 @@ RUN apt-get update && apt-get install -y ca-certificates openssl fdisk mergerfs 
     tar -xzvf nebula-linux-arm64.tar.gz && \
     mv nebula nebula-arm && \
     mv nebula-cert nebula-arm-cert && \
-    rm nebula-linux-arm64.tar.gz && \
-    apt-get remove -y wget curl && \
-    apt-get autoremove -y
-
+    rm nebula-linux-arm64.tar.gz
+    
 # Copy Go modules and download them, copy npm dependencies and install them
 COPY go.mod ./
 COPY go.sum ./
@@ -44,6 +43,7 @@ RUN npm run client-build && \
            /tmp/* \
            /var/lib/apt/lists/* \
            /var/tmp/*
-
-# Start Avahi daemon and run the application
+RUN apt-get remove -y wget curl && \
+    apt-get autoremove -y
+    
 CMD service avahi-daemon start && ./cosmos
