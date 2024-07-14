@@ -50,14 +50,14 @@ jobs:
       - name: Build UI
         run: npm run client-build
 
-      - name: Build Docker Image
-        run: docker build -t docker.pkg.github.com/${{ github.repository_owner }}/${{ github.repository }}/my-image:latest .
-        
-      - name: Docker Login to GitHub Packages
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u ${{ github.repository_owner }} --password-stdin
-
-      - name: Push Docker Image to GitHub Packages
-        run: docker push docker.pkg.github.com/${{ github.repository_owner }}/${{ github.repository }}/my-image:latest
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/lilkidsuave/cosmos-server:latest
+          platforms: linux/amd64
 
   build-arm:
     name: Build and Publish on ARM
@@ -87,12 +87,7 @@ jobs:
 
       - name: Install npm dependencies
         run: npm install
-
-      - name: Download GeoLite2-Country database
-        run: |
-          curl -s -L "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country&license_key=$MAX_TOKEN&suffix=tar.gz" -o GeoLite2-Country.tar.gz
-          tar -xzf GeoLite2-Country.tar.gz --strip-components 1 --wildcards "*.mmdb"
-
+        
       - name: Download and Extract Nebula Binary (ARM64)
         run: |
           curl -LO https://github.com/slackhq/nebula/releases/download/v1.7.2/nebula-linux-arm64.tar.gz
@@ -103,11 +98,11 @@ jobs:
       - name: Build UI
         run: npm run client-build
 
-      - name: Build Docker Image (ARM64)
-        run: docker build -t docker.pkg.github.com/${{ github.repository_owner }}/${{ github.repository }}/my-image-arm64:latest .
-        
-      - name: Docker Login to GitHub Packages (ARM64)
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u ${{ github.repository_owner }} --password-stdin
-
-      - name: Push Docker Image to GitHub Packages (ARM64)
-        run: docker push docker.pkg.github.com/${{ github.repository_owner }}/${{ github.repository }}/my-image-arm64:latest
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/lilkidsuave/cosmos-server:latest
+          platforms: linux/arm64
