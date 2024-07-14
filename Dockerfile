@@ -36,7 +36,7 @@ COPY package.json ./
 COPY package-lock.json ./
 RUN npm install
 
-COPY . /app
+COPY . .
 RUN npm run client-build && \
     chmod +x build.sh && \
     ./build.sh && \
