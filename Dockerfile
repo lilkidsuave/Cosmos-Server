@@ -2,60 +2,45 @@
 
 FROM debian:11
 
-# Expose necessary ports and volumes
-EXPOSE 443 80 5353/udp
+EXPOSE 443 80
+
 VOLUME /config
 
-# Set working directory
 WORKDIR /app
-SHELL ["/bin/bash", "-c"]
 
-# Install necessary packages, download and install Go, install Node.js
-RUN apt-get update \
-    && apt-get install -y \
-        ca-certificates \
-        openssl \
-        fdisk \
-        mergerfs \
-        snapraid \
-        avahi-daemon \
-        avahi-utils \
-        wget \
-        nodejs \
-    && wget https://golang.org/dl/go1.21.8.linux-amd64.tar.gz \
-    && tar -C /usr/local -xzf go1.21.8.linux-amd64.tar.gz \
-    && rm go1.21.8.linux-amd64.tar.gz \
-    && wget -O- https://deb.nodesource.com/setup_18.x | bash - \
-    && apt-get remove -y wget \
-    && apt-get autoremove -y \
-    && rm -rf /var/lib/apt/lists/* \
-    && wget https://github.com/slackhq/nebula/releases/download/v1.8.2/nebula-linux-amd64.tar.gz \
-    && tar -xzvf nebula-linux-amd64.tar.gz \
-    && rm nebula-linux-amd64.tar.gz
+ENV PATH=$PATH:/usr/local/go/bin
 
-# Set default environment variables including PATH
-ENV PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/go/bin:/app/bin:/usr/local:${PATH}"
+RUN apt-get update && apt-get install -y ca-certificates openssl fdisk mergerfs snapraid && \
+    apt-get install -y --no-install-recommends  wget curl && \
+    apt-get install -y --no-install-recommends nodejs && \
+    wget https://golang.org/dl/go1.20.2.linux-amd64.tar.gz && \
+    tar -C /usr/local -xzf go1.20.2.linux-amd64.tar.gz && \
+    rm go1.20.2.linux-amd64.tar.gz && \
+    curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
+    apt-get install -y nodejs && \
+    apt-get remove -y wget curl && \
+    apt-get autoremove -y && \
+    wget https://github.com/slackhq/nebula/releases/download/v1.8.2/nebula-linux-amd64.tar.gz &&\
+    tar -xzvf nebula-linux-amd64.tar.gz && \
+    rm nebula-linux-amd64.tar.gz
 
 # Copy Go modules and download them, copy npm dependencies and install them
-COPY go.mod go.sum ./
-RUN go mod download \
-    && npm install
+COPY go.mod ./
+COPY go.sum ./
+RUN go mod download
 
-# Copy application code
+COPY package.json ./
+COPY package-lock.json ./
+RUN npm install
+
 COPY . .
-
-# Build UI, run additional build script or commands
-RUN npm run client-build \
-    && chmod +x build.sh \
-    && ./build.sh
-
-# Clean up unnecessary files
-RUN rm -rf /usr/local/go \
+RUN npm run client-build && \
+    chmod +x build.sh && \
+    ./build.sh && \
+    rm -rf /usr/local/go \
            /tmp/* \
+           /var/lib/apt/lists/* \
            /var/tmp/*
-
-# Set working directory for runtime
-WORKDIR /app/build
 
 # Start Avahi daemon and run the application
 CMD service avahi-daemon start && ./cosmos
