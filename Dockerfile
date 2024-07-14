@@ -22,19 +22,10 @@ RUN apt-get update && \
         avahi-utils \
         wget \
         curl \
+        nodejs \
+        npm \
+        golang \
     && rm -rf /var/lib/apt/lists/*
-
-# Download and install Go
-ENV PATH=$PATH:/usr/local/go/bin
-RUN wget https://golang.org/dl/go1.21.8.linux-amd64.tar.gz && \
-    tar -C /usr/local -xzf go1.21.8.linux-amd64.tar.gz && \
-    rm go1.21.8.linux-amd64.tar.gz
-
-# Install Node.js
-RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
-    apt-get install -y nodejs && \
-    apt-get remove -y wget curl && \
-    apt-get autoremove -y
 
 # Copy Go modules and download them
 COPY go.mod go.sum ./
