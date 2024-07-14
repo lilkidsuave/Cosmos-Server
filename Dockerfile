@@ -2,42 +2,64 @@
 
 FROM debian:11
 
+# Expose necessary ports and volumes
 EXPOSE 443 80 5353/udp
-
 VOLUME /config
 
+# Set working directory
 WORKDIR /app
 
-ENV PATH=$PATH:/usr/local/go/bin
+# Install necessary packages
+RUN apt-get update && \
+    apt-get install -y \
+        ca-certificates \
+        openssl \
+        fdisk \
+        mergerfs \
+        snapraid \
+        avahi-daemon \
+        avahi-utils \
+        wget \
+        curl \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN apt-get update && apt-get install -y ca-certificates openssl fdisk mergerfs snapraid avahi-daemon avahi-utils && \
-    apt-get install -y --no-install-recommends wget curl && \
-    apt-get install -y --no-install-recommends nodejs && \
-    wget https://golang.org/dl/go1.21.8.linux-amd64.tar.gz && \
+# Download and install Go
+ENV PATH=$PATH:/usr/local/go/bin
+RUN wget https://golang.org/dl/go1.21.8.linux-amd64.tar.gz && \
     tar -C /usr/local -xzf go1.21.8.linux-amd64.tar.gz && \
-    rm go1.21.8.linux-amd64.tar.gz && \
-    curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
+    rm go1.21.8.linux-amd64.tar.gz
+
+# Install Node.js
+RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
     apt-get install -y nodejs && \
     apt-get remove -y wget curl && \
     apt-get autoremove -y
 
-COPY go.mod ./
-COPY go.sum ./
+# Copy Go modules and download them
+COPY go.mod go.sum ./
 RUN go mod download
 
-COPY package.json ./
-COPY package-lock.json ./
+# Copy npm dependencies and install them
+COPY package.json package-lock.json ./
 RUN npm install
 
+# Copy application code
 COPY . .
-RUN npm run client-build && \
-    chmod +x build.sh && \
-    ./build.sh && \
-    rm -rf /usr/local/go \
+
+# Build UI
+RUN npm run client-build
+
+# Run additional build script or commands
+RUN chmod +x build.sh && \
+    ./build.sh
+
+# Clean up unnecessary files
+RUN rm -rf /usr/local/go \
            /tmp/* \
-           /var/lib/apt/lists/* \
            /var/tmp/*
 
+# Set working directory for runtime
 WORKDIR /app/build
 
-CMD ["/bin/bash", "-c", "service avahi-daemon start && ./cosmos"]
+# Start Avahi daemon and run the application
+CMD service avahi-daemon start && ./cosmos
