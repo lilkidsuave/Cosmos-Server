@@ -11,7 +11,7 @@ WORKDIR /app
 ENV PATH=$PATH:/usr/local/go/bin
 
 RUN apt-get update && apt-get install -y ca-certificates openssl fdisk mergerfs snapraid avahi-daemon avahi-utils && \
-    apt-get install -y --no-install-recommends  wget curl && \
+    apt-get install -y --no-install-recommends wget curl && \
     apt-get install -y --no-install-recommends nodejs && \
     wget https://golang.org/dl/go1.21.8.linux-amd64.tar.gz && \
     tar -C /usr/local -xzf go1.21.8.linux-amd64.tar.gz && \
@@ -21,15 +21,15 @@ RUN apt-get update && apt-get install -y ca-certificates openssl fdisk mergerfs 
     apt-get remove -y wget curl && \
     apt-get autoremove -y
 
-COPY go.mod ./ 
-COPY go.sum ./ 
+COPY go.mod ./
+COPY go.sum ./
 RUN go mod download
 
-COPY package.json ./ 
-COPY package-lock.json ./ 
+COPY package.json ./
+COPY package-lock.json ./
 RUN npm install
 
-COPY . . 
+COPY . .
 RUN npm run client-build && \
     chmod +x build.sh && \
     ./build.sh && \
