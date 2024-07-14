@@ -53,7 +53,7 @@ jobs:
           curl -LO https://github.com/slackhq/nebula/releases/download/v1.8.2/nebula-linux-amd64.tar.gz
           tar -xzvf nebula-linux-amd64.tar.gz
           docker buildx create --use
-          docker buildx build --platform linux/amd64,linux/arm64 -t ghcr.io/lilkidsuave/qbdlgui-reborn:latest -t ghcr.io/lilkidsuave/qbdlgui-reborn:V1.1 .
+          docker buildx build --platform linux/amd64,linux/arm64 -t ghcr.io/lilkidsuave/cosmos-server:latest -t ghcr.io/lilkidsuave/cosmos-server:unstable .
 
       - name: Push Docker image
         run: docker push ghcr.io/lilkidsuave/qbdlgui-reborn
