@@ -51,6 +51,7 @@ RUN apt-get remove -y wget curl && \
     dbus-uuidgen > /var/lib/dbus/machine-id && \
     service dbus enable && \
     service avahi-daemon enable
+    
 WORKDIR /app/build
 
 CMD service dbus start && \
