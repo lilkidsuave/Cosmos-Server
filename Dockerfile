@@ -10,7 +10,7 @@ WORKDIR /app
 
 ENV PATH=$PATH:/usr/local/go/bin
 
-RUN apt-get update && apt-get install -y ca-certificates openssl fdisk mergerfs snapraid && \
+RUN apt-get update && apt-get install -y ca-certificates openssl fdisk mergerfs snapraid avahi-daemon avahi-utils dbus && \
     apt-get install -y --no-install-recommends  wget curl && \
     wget https://golang.org/dl/go1.21.8.linux-amd64.tar.gz && \
     tar -C /usr/local -xzf go1.21.8.linux-amd64.tar.gz && \
@@ -47,4 +47,9 @@ RUN npm run client-build && \
 RUN apt-get remove -y wget curl && \
     apt-get autoremove -y
     
-CMD service avahi-daemon start && ./cosmos
+RUN mkdir -p /var/run/dbus && \
+    dbus-uuidgen > /var/lib/dbus/machine-id
+
+CMD service dbus start && \
+    service avahi-daemon start && \
+    ./cosmos
