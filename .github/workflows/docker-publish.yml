@@ -19,37 +19,6 @@ jobs:
       - name: Setup Docker Buildx
         run: docker buildx create --use
 
-      - name: Install Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y bash curl
-
-      - name: Download and Install Go
-        run: |
-          wget https://golang.org/dl/go1.21.6.linux-amd64.tar.gz
-          sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.21.6.linux-amd64.tar.gz
-
-      - name: Set Go Environment
-        run: echo 'export PATH=$PATH:/usr/local/go/bin' >> $GITHUB_ENV
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v2
-        with:
-          node-version: '16'
-
-      - name: Install npm dependencies
-        run: npm install
-        
-      - name: Download and Extract Nebula Binary (AMD64)
-        run: |
-          curl -LO https://github.com/slackhq/nebula/releases/download/v1.7.2/nebula-linux-amd64.tar.gz
-          tar -xzvf nebula-linux-amd64.tar.gz
-          mv nebula nebula-amd
-          mv nebula-cert nebula-amd-cert
-
-      - name: Build UI
-        run: npm run client-build
-
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
