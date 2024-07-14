@@ -9,9 +9,9 @@ VOLUME /config
 # Set working directory
 WORKDIR /app
 
-# Install necessary packages
-RUN apt-get update && \
-    apt-get install -y \
+# Install necessary packages, download and install Go, install Node.js
+RUN apt-get update \
+    && apt-get install -y \
         ca-certificates \
         openssl \
         fdisk \
@@ -20,44 +20,33 @@ RUN apt-get update && \
         avahi-daemon \
         avahi-utils \
         wget \
-    && rm -rf /var/lib/apt/lists/*
-
-# Download and install Go
-RUN wget https://golang.org/dl/go1.21.8.linux-amd64.tar.gz && \
-    tar -C /usr/local -xzf go1.21.8.linux-amd64.tar.gz && \
-    rm go1.21.8.linux-amd64.tar.gz
-
-# Install Node.js
-RUN wget -O- https://deb.nodesource.com/setup_18.x | bash - && \
-    apt-get install -y nodejs && \
-    apt-get remove -y wget && \
-    apt-get autoremove -y
+        nodejs \
+    && wget https://golang.org/dl/go1.21.8.linux-amd64.tar.gz \
+    && tar -C /usr/local -xzf go1.21.8.linux-amd64.tar.gz \
+    && rm go1.21.8.linux-amd64.tar.gz \
+    && wget -O- https://deb.nodesource.com/setup_18.x | bash - \
+    && apt-get remove -y wget \
+    && apt-get autoremove -y \
+    && rm -rf /var/lib/apt/lists/* \
+    && wget https://github.com/slackhq/nebula/releases/download/v1.8.2/nebula-linux-amd64.tar.gz \
+    && tar -xzvf nebula-linux-amd64.tar.gz \
+    && rm nebula-linux-amd64.tar.gz
 
 # Set default environment variables including PATH
-ARG PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/go/bin:/app/bin:${PATH}"
+ENV PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/go/bin:/app/bin:/usr/local:${PATH}"
 
-# Copy Go modules and download them
+# Copy Go modules and download them, copy npm dependencies and install them
 COPY go.mod go.sum ./
-RUN go mod download
-
-# Copy npm dependencies and install them
-COPY package.json package-lock.json ./
-RUN npm install
-
-# Download and Extract Nebula Binary
-RUN wget https://github.com/slackhq/nebula/releases/download/v1.8.2/nebula-linux-amd64.tar.gz && \
-    tar -xzvf nebula-linux-amd64.tar.gz && \
-    rm nebula-linux-amd64.tar.gz
+RUN go mod download \
+    && npm install
 
 # Copy application code
 COPY . .
 
-# Build UI
-RUN npm run client-build
-
-# Run additional build script or commands
-RUN chmod +x build.sh && \
-    ./build.sh
+# Build UI, run additional build script or commands
+RUN npm run client-build \
+    && chmod +x build.sh \
+    && ./build.sh
 
 # Clean up unnecessary files
 RUN rm -rf /usr/local/go \
