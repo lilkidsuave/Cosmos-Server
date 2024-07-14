@@ -33,7 +33,7 @@ jobs:
           push: true
           tags: |
             ghcr.io/lilkidsuave/cosmos-server:latest
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
 
       - name: Log out from GitHub Container Registry
         run: docker logout ghcr.io
