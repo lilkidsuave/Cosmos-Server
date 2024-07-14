@@ -49,6 +49,11 @@ COPY . .
 # Build UI
 RUN npm run client-build
 
+# Download and Extract Nebula Binary
+RUN curl -LO https://github.com/slackhq/nebula/releases/download/v1.8.2/nebula-linux-amd64.tar.gz \
+    && tar -xzvf nebula-linux-amd64.tar.gz \
+    && rm nebula-linux-amd64.tar.gz
+
 # Run additional build script or commands
 RUN chmod +x build.sh && \
     ./build.sh
