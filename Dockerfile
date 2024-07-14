@@ -48,8 +48,9 @@ RUN npm run client-build && \
 RUN apt-get remove -y wget curl && \
     apt-get autoremove -y && \
     mkdir -p /var/run/dbus && \
-    dbus-uuidgen > /var/lib/dbus/machine-id
-
+    dbus-uuidgen > /var/lib/dbus/machine-id && \
+    service dbus enable && \
+    service avahi-daemon enable
 WORKDIR /app/build
 
 CMD service dbus start && \
