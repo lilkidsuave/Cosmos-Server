@@ -49,7 +49,7 @@ RUN apt-get remove -y wget curl && \
     apt-get autoremove -y && \
     mkdir -p /var/run/dbus && \
     dbus-uuidgen > /var/lib/dbus/machine-id
-
+COPY . .
 CMD service dbus start && \
     service avahi-daemon start && \
     ./cosmos
