@@ -19,13 +19,7 @@ jobs:
           sudo apt-get install -y \
             bash coreutils curl wget \
             ca-certificates openssl fdisk mergerfs snapraid avahi-daemon avahi-utils \
-            nodejs
-
-          # Install Go
-          curl -fsSL https://get.docker.com | sudo sh
-          wget https://golang.org/dl/go1.21.6.linux-amd64.tar.gz
-          sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.21.6.linux-amd64.tar.gz
-          echo 'PATH=$PATH:/usr/local/go/bin' >> $GITHUB_ENV
+            nodejs golang
 
           # Install NVM and Node.js
           export NVM_DIR="$HOME/.nvm"
@@ -57,7 +51,7 @@ jobs:
           docker buildx build --platform linux/amd64,linux/arm64 -t ghcr.io/lilkidsuave/cosmos-server:latest -t ghcr.io/lilkidsuave/cosmos-server:unstable .
 
       - name: Push Docker image
-        run: docker push ghcr.io/lilkidsuave/qbdlgui-reborn
+        run: docker push ghcr.io/lilkidsuave/cosmos-server
 
       - name: Log out from GitHub Container Registry
         run: docker logout ghcr.io
