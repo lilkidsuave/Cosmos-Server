@@ -8,6 +8,7 @@ VOLUME /config
 
 # Set working directory
 WORKDIR /app
+SHELL ["/bin/bash", "-c"]
 
 # Install necessary packages, download and install Go, install Node.js
 RUN apt-get update \
