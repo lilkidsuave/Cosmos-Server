@@ -15,6 +15,7 @@ RUN apt-get update && \
         ca-certificates \
         openssl \
         fdisk \
+        curl \
         mergerfs \
         snapraid \
         avahi-daemon \
