@@ -44,10 +44,10 @@ RUN npm run client-build && \
            /tmp/* \
            /var/lib/apt/lists/* \
            /var/tmp/*
+           
 RUN apt-get remove -y wget curl && \
-    apt-get autoremove -y
-    
-RUN mkdir -p /var/run/dbus && \
+    apt-get autoremove -y && \
+    mkdir -p /var/run/dbus && \
     dbus-uuidgen > /var/lib/dbus/machine-id
 
 CMD service dbus start && \
