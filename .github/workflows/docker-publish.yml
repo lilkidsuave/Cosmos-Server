@@ -13,35 +13,32 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install basic utilities
-        run: sudo apt-get update && sudo apt-get install -y bash coreutils
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Install Go
+      - name: Install dependencies
         run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            bash coreutils curl wget \
+            ca-certificates openssl fdisk mergerfs snapraid avahi-daemon avahi-utils \
+            nodejs
+
+          # Install Go
           wget https://golang.org/dl/go1.21.6.linux-amd64.tar.gz
           sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.21.6.linux-amd64.tar.gz
           echo 'PATH=$PATH:/usr/local/go/bin' >> $GITHUB_ENV
 
-      - name: Install NVM and Node.js
-        run: |
+          # Install NVM and Node.js
           export NVM_DIR="$HOME/.nvm"
-          mkdir -p $NVM_DIR
           curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
-          echo 'NVM_DIR=$HOME/.nvm' >> $GITHUB_ENV
-          echo '. $NVM_DIR/nvm.sh' >> $GITHUB_ENV
           . $NVM_DIR/nvm.sh
           nvm install v16
           nvm alias default v16
 
-      - name: Verify Node.js installation
+      - name: Verify installations
         run: |
-          . $HOME/.nvm/nvm.sh
+          bash --version
+          mkdir --version
+          curl --version
+          wget --version
           node -v
 
       - name: Login to GitHub Container Registry
@@ -51,39 +48,23 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Install npm dependencies
+      - name: Build and push Docker image
         run: |
-          . $HOME/.nvm/nvm.sh
           npm install
-
-      - name: Download GeoLite2-Country database
-        run: |
+          npm run client-build
           curl -s -L "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country&license_key=${{ secrets.MAX_TOKEN }}&suffix=tar.gz" -o GeoLite2-Country.tar.gz
           tar -xzf GeoLite2-Country.tar.gz --strip-components 1 --wildcards "*.mmdb"
-
-      - name: Download and extract Nebula binaries
-        run: |
           curl -LO https://github.com/slackhq/nebula/releases/download/v1.8.2/nebula-linux-arm64.tar.gz
           tar -xzvf nebula-linux-arm64.tar.gz
           mv nebula nebula-arm
           mv nebula-cert nebula-arm-cert
           curl -LO https://github.com/slackhq/nebula/releases/download/v1.8.2/nebula-linux-amd64.tar.gz
           tar -xzvf nebula-linux-amd64.tar.gz
+          docker buildx create --use
+          docker buildx build --platform linux/amd64,linux/arm64 -t ghcr.io/lilkidsuave/qbdlgui-reborn:latest -t ghcr.io/lilkidsuave/qbdlgui-reborn:V1.1 .
 
-      - name: Build UI
-        run: |
-          . $HOME/.nvm/nvm.sh
-          npm run client-build
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: true
-          tags: |
-            ghcr.io/lilkidsuave/qbdlgui-reborn:latest
-            ghcr.io/lilkidsuave/qbdlgui-reborn:V1.1
-          platforms: linux/amd64,linux/arm64
+      - name: Push Docker image
+        run: docker push ghcr.io/lilkidsuave/qbdlgui-reborn
 
       - name: Log out from GitHub Container Registry
         run: docker logout ghcr.io
